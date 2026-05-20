@@ -1,0 +1,15 @@
+Core server and visualizer dependencies
+
+opencv-python==4.9.0.80
+requests==2.31.0
+
+LLM integration
+
+ollama==0.1.7
+
+Audio / Wake Word (For future implementation on Lenovo M70q)
+
+SpeechRecognition==3.10.1
+
+PyAudio==0.2.14
+

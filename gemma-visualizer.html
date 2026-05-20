@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALGaE - Gemma 4</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #04050d;
+            font-family: 'Google Sans', system-ui, -apple-system, sans-serif;
+        }
+
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #controls {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 100px;
+            z-index: 10;
+        }
+
+        .state-btn {
+            background: transparent;
+            color: rgba(255, 255, 255, 0.5);
+            border: none;
+            padding: 8px 18px;
+            border-radius: 100px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.4s ease;
+        }
+
+        .state-btn:hover {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .state-btn.active {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        #camera-pip {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            width: 320px;
+            height: 240px;
+            background: #000;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            overflow: hidden;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        #camera-pip.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        #camera-feed {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="camera-pip">
+        <img id="camera-feed" src="" alt="Camera Feed">
+    </div>
+
+    <div id="controls">
+        <button class="state-btn btn-idle active" data-state="idle">Idle</button>
+        <button class="state-btn btn-listening" data-state="listening">Listening</button>
+        <button class="state-btn btn-thinking" data-state="thinking">Thinking</button>
+        <button class="state-btn btn-speaking" data-state="speaking">Speaking</button>
+        <button class="state-btn btn-watching" data-state="watching">Watching</button>
+        <button class="state-btn btn-updating" data-state="updating">Updating</button>
+    </div>
+
+    <script>
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x04050d, 0.0035);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+        camera.position.z = 180;
+        camera.position.y = 5;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.body.appendChild(renderer.domElement);
+
+        const gridHelper = new THREE.GridHelper(1000, 40, 0x1a233a, 0x0a0f1d);
+        gridHelper.position.y = -60;
+        gridHelper.material.transparent = true;
+        gridHelper.material.opacity = 0.5;
+        gridHelper.material.blending = THREE.AdditiveBlending;
+        scene.add(gridHelper);
+
+        const particleCount = 15000;
+        const particles = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const basePositions = new Float32Array(particleCount * 3);
+        const colors = new Float32Array(particleCount * 3);
+        const sizes = new Float32Array(particleCount);
+        const phases = new Float32Array(particleCount);
+        const color = new THREE.Color();
+
+        for (let i = 0; i < particleCount; i++) {
+            const i3 = i * 3;
+            const radius = 40 + Math.random() * 10;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos((Math.random() * 2) - 1);
+
+            const x = radius * Math.sin(phi) * Math.cos(theta);
+            const y = radius * Math.sin(phi) * Math.sin(theta);
+            const z = radius * Math.cos(phi);
+
+            positions[i3] = x;
+            positions[i3 + 1] = y;
+            positions[i3 + 2] = z;
+
+            basePositions[i3] = x;
+            basePositions[i3 + 1] = y;
+            basePositions[i3 + 2] = z;
+
+            color.setHSL(0.6 + Math.random() * 0.1, 0.8, 0.5);
+            colors[i3] = color.r;
+            colors[i3 + 1] = color.g;
+            colors[i3 + 2] = color.b;
+
+            sizes[i] = Math.random() * 2;
+            phases[i] = Math.random() * Math.PI * 2;
+        }
+
+        particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        particles.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        particles.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+        particles.setAttribute('phase', new THREE.BufferAttribute(phases, 1));
+
+        const vertexShader = `
+        attribute float size;
+        attribute float phase;
+        attribute vec3 color;
+        varying vec3 vColor;
+        
+        uniform float time;
+        uniform float stateIntensity; 
+        uniform float stateType;      
+        uniform float audioVolume;    
+
+        vec3 fluidDisplacement(vec3 p, float t, float ph) {
+            float x = sin(p.y * 0.05 + t * 0.5 + ph) * 3.0;
+            float y = cos(p.z * 0.05 + t * 0.6 + ph) * 3.0;
+            float z = sin(p.x * 0.05 + t * 0.4 + ph) * 3.0;
+            return vec3(x, y, z);
+        }
+
+        void main() {
+            vColor = color;
+            vec3 pos = position;
+            vec3 targetPos = position;
+            float originalDist = length(pos); 
+
+            float dropletPulse = sin(time * 0.5 + phase) * 2.0;
+            vec3 idlePos = normalize(pos) * (originalDist * 1.1 + dropletPulse * 2.0) + fluidDisplacement(pos, time * 0.3, phase);
+
+            if (stateType < 0.5) {
+                targetPos = idlePos;
+            } 
+            else if (stateType < 1.5) {
+                float ripple = sin(originalDist * 0.1 - time * 3.0) * (2.0 + audioVolume * 5.0);
+                targetPos = (pos * 1.2) + normalize(pos) * ripple + fluidDisplacement(pos, time * 1.2, phase) * 0.5;
+            }
+            else if (stateType < 2.5) {
+                float t = time * 2.0;
+                vec3 thinkPos = pos;
+                float angleY = atan(thinkPos.z, thinkPos.x);
+                float angleX = atan(thinkPos.y, length(thinkPos.xz));
+                float folding = sin(angleY * 5.0 + t) * cos(angleX * 4.0 - t * 0.8) * 12.0;
+                float processingRipple = sin(originalDist * 0.5 - t * 5.0) * 2.0;
+                vec3 norm = normalize(thinkPos);
+                float newRadius = originalDist * 0.9 + folding + processingRipple;
+                thinkPos = norm * newRadius;
+                float s = sin(thinkPos.y * 0.04 + t * 0.3);
+                float c = cos(thinkPos.y * 0.04 + t * 0.3);
+                mat2 rotY = mat2(c, -s, s, c);
+                thinkPos.xz *= rotY;
+                targetPos = thinkPos;
+            }
+            else if (stateType < 3.5) {
+                vec3 speakPos = pos;
+                speakPos.xz *= 1.6; 
+                float distXZ = length(speakPos.xz); 
+                speakPos.y *= 0.1; 
+                float angle = atan(speakPos.z, speakPos.x);
+                float wave = sin(distXZ * 0.4 - time * 8.0) * cos(angle * 6.0);
+                float spikeHeight = wave * (12.0 + audioVolume * 40.0);
+                speakPos.y += spikeHeight;
+                targetPos = speakPos;
+            }
+            else if (stateType < 4.5) {
+                vec3 watchPos = pos;
+                watchPos.xy *= 0.8; 
+                watchPos.z *= 0.1; 
+                vec2 lookVec = vec2(
+                    sin(time * 0.8) * 14.0 + cos(time * 0.3) * 5.0,
+                    cos(time * 0.6) * 10.0 + sin(time * 0.4) * 4.0
+                );
+                float distXY = length(watchPos.xy);
+                float influence = smoothstep(45.0, 0.0, distXY);
+                watchPos.xy += lookVec * influence;
+                
+                vec2 toPupil = watchPos.xy - lookVec;
+                float distToPupil = length(toPupil);
+                float pupilRadius = 16.0; 
+                
+                if (distToPupil < pupilRadius) {
+                    float edgeThickness = sin(phase * 5.0) * 2.0;
+                    watchPos.xy = lookVec + normalize(toPupil) * (pupilRadius + edgeThickness);
+                    watchPos.z -= 2.0; 
+                } else {
+                    float irisBulge = smoothstep(30.0, pupilRadius, distToPupil);
+                    watchPos.z += irisBulge * 12.0 + (sin(time * 2.0 + phase) * 1.5 * irisBulge);
+                }
+                targetPos = watchPos;
+            }
+            else {
+                vec3 updatePos = pos;
+                float distXZ = length(updatePos.xz);
+                float newRadius = mod(originalDist, 15.0) + 5.0; 
+                vec2 normXZ = normalize(updatePos.xz);
+                updatePos.xz = normXZ * newRadius;
+                updatePos.y += time * 40.0 + phase * 10.0;
+                updatePos.y = mod(updatePos.y + 100.0, 200.0) - 100.0;
+                float angle = updatePos.y * 0.1 + time * 2.0;
+                float s = sin(angle);
+                float c = cos(angle);
+                mat2 rot = mat2(c, -s, s, c);
+                updatePos.xz *= rot;
+                targetPos = updatePos;
+            }
+
+            pos = mix(idlePos, targetPos, stateIntensity);
+            vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+            gl_PointSize = size * (250.0 / -mvPosition.z);
+            gl_Position = projectionMatrix * mvPosition;
+        }
+    `;
+
+        const fragmentShader = `
+        varying vec3 vColor;
+        void main() {
+            vec2 xy = gl_PointCoord.xy - vec2(0.5);
+            float ll = length(xy);
+            if(ll > 0.5) discard;
+            float alpha = (0.5 - ll) * 2.0;
+            gl_FragColor = vec4(vColor, alpha * 0.8);
+        }
+    `;
+
+        const uniforms = {
+            time: { value: 0 },
+            stateIntensity: { value: 0 },
+            stateType: { value: 0 },
+            audioVolume: { value: 0.5 }
+        };
+
+        const material = new THREE.ShaderMaterial({
+            uniforms: uniforms,
+            vertexShader: vertexShader,
+            fragmentShader: fragmentShader,
+            transparent: true,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending
+        });
+
+        const particleSystem = new THREE.Points(particles, material);
+        scene.add(particleSystem);
+
+        const states = {
+            idle: { type: 0, color: { h1: 0.6, h2: 0.7, s: 0.8, l: 0.5 }, name: 'IDLE' },
+            listening: { type: 1, color: { h1: 0.45, h2: 0.55, s: 0.9, l: 0.5 }, name: 'LISTENING' },
+            thinking: { type: 2, color: { h1: 0.75, h2: 0.9, s: 0.8, l: 0.6 }, name: 'THINKING' },
+            speaking: { type: 3, color: { h1: 0.95, h2: 0.1, s: 0.9, l: 0.65 }, name: 'SPEAKING' },
+            watching: { type: 4, color: { h1: 0.1, h2: 0.15, s: 0.9, l: 0.6 }, name: 'WATCHING' },
+            updating: { type: 5, color: { h1: 0.4, h2: 0.3, s: 1.0, l: 0.6 }, name: 'UPDATING' }
+        };
+
+        let currentState = 'idle';
+        let targetColor1 = new THREE.Color().setHSL(states.idle.color.h1, states.idle.color.s, states.idle.color.l);
+        let targetColor2 = new THREE.Color().setHSL(states.idle.color.h2, states.idle.color.s, states.idle.color.l);
+        const clock = new THREE.Clock();
+
+        let currentRotation = 0;
+        let targetRotation = 0;
+
+        function setState(newStateName) {
+            if (currentState === newStateName) return;
+
+            const newState = states[newStateName];
+            currentState = newStateName;
+
+            document.querySelectorAll('.state-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.btn-${newStateName}`).classList.add('active');
+
+            targetColor1.setHSL(newState.color.h1, newState.color.s, newState.color.l);
+            targetColor2.setHSL(newState.color.h2, newState.color.s, newState.color.l);
+
+            gsap.to(uniforms.stateIntensity, {
+                value: 0,
+                duration: 0.5,
+                ease: "power2.inOut",
+                onComplete: () => {
+                    uniforms.stateType.value = newState.type;
+                    gsap.to(uniforms.stateIntensity, { value: 1, duration: 1.0, ease: "power2.out" });
+                }
+            });
+
+            if (newStateName === 'watching') gsap.to(camera.position, { z: 120, duration: 1.5 });
+            else if (newStateName === 'updating') gsap.to(camera.position, { z: 200, duration: 1.5 });
+            else gsap.to(camera.position, { z: 180, duration: 1.5 });
+        }
+
+        document.querySelectorAll('.state-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => { setState(e.target.dataset.state); });
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const elapsedTime = clock.getElapsedTime();
+            uniforms.time.value = elapsedTime;
+
+            if (currentState === 'listening' || currentState === 'speaking') {
+                uniforms.audioVolume.value = 0.2 + Math.abs(Math.sin(elapsedTime * 4) * Math.cos(elapsedTime * 2)) * 0.5;
+            } else {
+                uniforms.audioVolume.value = 0;
+            }
+
+            const positionsAttribute = particles.attributes.position;
+            const colorsAttribute = particles.attributes.color;
+
+            for (let i = 0; i < particleCount; i++) {
+                const i3 = i * 3;
+                const yPos = basePositions[i3 + 1];
+                let gradientMix = Math.max(0, Math.min(1, (yPos + 50) / 100));
+
+                const targetColorForParticle = new THREE.Color().lerpColors(targetColor1, targetColor2, gradientMix);
+                const currentColor = new THREE.Color(colorsAttribute.array[i3], colorsAttribute.array[i3 + 1], colorsAttribute.array[i3 + 2]);
+                currentColor.lerp(targetColorForParticle, 0.05);
+
+                const noise = (Math.sin(elapsedTime * 2 + phases[i]) * 0.03);
+                colorsAttribute.array[i3] = Math.max(0, Math.min(1, currentColor.r + noise));
+                colorsAttribute.array[i3 + 1] = Math.max(0, Math.min(1, currentColor.g + noise));
+                colorsAttribute.array[i3 + 2] = Math.max(0, Math.min(1, currentColor.b + noise));
+            }
+            colorsAttribute.needsUpdate = true;
+
+            if (currentState !== 'watching') {
+                targetRotation += 0.0015;
+            } else {
+                const twoPi = Math.PI * 2;
+                let currentMod = currentRotation % twoPi;
+                if (currentMod < 0) currentMod += twoPi;
+                targetRotation = currentMod < Math.PI ? currentRotation - currentMod : currentRotation + (twoPi - currentMod);
+            }
+
+            currentRotation += (targetRotation - currentRotation) * 0.05;
+            particleSystem.rotation.y = currentRotation;
+            particleSystem.position.y = Math.sin(elapsedTime * 0.8) * 4.0;
+            renderer.render(scene, camera);
+        }
+
+        uniforms.stateType.value = states.idle.type;
+        uniforms.stateIntensity.value = 1.0;
+        animate();
+
+        document.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+            if (key === 'f') {
+                if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+                else document.exitFullscreen();
+            }
+        });
+
+        setInterval(async () => {
+            try {
+                const response = await fetch('/api/state');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && data.state && states[data.state] && currentState !== data.state) {
+                        setState(data.state);
+                    }
+                    const pip = document.getElementById('camera-pip');
+                    if (data.show_camera && !pip.classList.contains('visible')) {
+                        pip.classList.add('visible');
+                        document.getElementById('camera-feed').src = '/api/camera_stream?' + new Date().getTime();
+                    } else if (!data.show_camera && pip.classList.contains('visible')) {
+                        pip.classList.remove('visible');
+                        document.getElementById('camera-feed').src = '';
+                    }
+                }
+            } catch (err) { }
+        }, 500); 
+    </script>
+</body>
+
+</html>

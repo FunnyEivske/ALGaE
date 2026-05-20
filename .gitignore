@@ -1,0 +1,21 @@
+Python Virtual Environment
+
+venv/
+env/
+
+Python Cache
+
+pycache/
+*.pyc
+*.pyo
+
+OS generated files
+
+.DS_Store
+Thumbs.db
+
+Algae Persistent Data (Ensures memory is NEVER uploaded to GitHub)
+
+.algae_data/
+*.sqlite3
+*.db
