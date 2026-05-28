@@ -22,6 +22,7 @@ try:
     from vosk import Model as VoskModel, KaldiRecognizer
 except ImportError:
     VoskModel = None
+    KaldiRecognizer = None
 
 # Constants
 API_URL = "http://localhost:8080/api/state"
@@ -41,6 +42,8 @@ def set_state(state, show_camera=None):
         pass
 
 def init_vosk():
+    if VoskModel is None:
+        return None
     model_path = os.path.expanduser("~/ALGaE/vosk-model")
     if not os.path.exists(model_path):
         print("[Warning] Vosk model not found at ~/ALGaE/vosk-model.")
