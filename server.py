@@ -2,36 +2,15 @@ import http.server
 import socketserver
 import json
 import os
-import cv2 
-import threading
 import time
+
+# Import hardware manager
+from core.hardware import camera
 
 # Configuration
 PORT = 8080
 current_state = "idle"
 show_camera_pip = False
-camera_lock = threading.Lock()
-frame_bytes = None
-
-# Background thread to read the webcam
-def camera_loop():
-    global frame_bytes
-    cap = cv2.VideoCapture(0)
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-    
-    while True:
-        ret, frame = cap.read()
-        if ret:
-            ret, jpeg = cv2.imencode('.jpg', frame)
-            if ret:
-                with camera_lock:
-                    frame_bytes = jpeg.tobytes()
-        else:
-            time.sleep(0.1)
-
-# Start camera thread
-threading.Thread(target=camera_loop, daemon=True).start()
 
 class GemmaVisualizerHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
@@ -58,14 +37,14 @@ class GemmaVisualizerHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             try:
                 while True:
-                    with camera_lock:
-                        if frame_bytes:
-                            self.wfile.write(b'--frame\r\n')
-                            self.send_header('Content-Type', 'image/jpeg')
-                            self.send_header('Content-Length', str(len(frame_bytes)))
-                            self.end_headers()
-                            self.wfile.write(frame_bytes)
-                            self.wfile.write(b'\r\n')
+                    frame_bytes = camera.get_jpeg_bytes()
+                    if frame_bytes:
+                        self.wfile.write(b'--frame\r\n')
+                        self.send_header('Content-Type', 'image/jpeg')
+                        self.send_header('Content-Length', str(len(frame_bytes)))
+                        self.end_headers()
+                        self.wfile.write(frame_bytes)
+                        self.wfile.write(b'\r\n')
                     time.sleep(0.05) 
             except Exception as e:
                 pass 
