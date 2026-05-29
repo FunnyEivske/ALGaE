@@ -29,8 +29,12 @@ API_URL = "http://localhost:8080/api/state"
 WAKE_WORD = "algae"
 
 # TTS Engine
-engine = pyttsx3.init()
-engine.setProperty('rate', 165)
+try:
+    engine = pyttsx3.init()
+    engine.setProperty('rate', 165)
+except Exception as e:
+    print(f"[Warning] Klarte ikke å starte stemmemotoren (pyttsx3/espeak): {e}")
+    engine = None
 
 def set_state(state, show_camera=None):
     payload = {"state": state}
@@ -80,11 +84,17 @@ def generate_response(prompt, use_vision=False):
         return "I am having trouble connecting to my local brain."
 
 def main_loop():
-    print("Starting ALGaE Brain...")
+    print("Starting ALGaE Brain...", flush=True)
     set_state("idle", False)
     
-    p = pyaudio.PyAudio()
-    stream = p.open(format=pyaudio.paInt16, channels=1, rate=16000, input=True, frames_per_buffer=1280)
+    try:
+        p = pyaudio.PyAudio()
+        stream = p.open(format=pyaudio.paInt16, channels=1, rate=16000, input=True, frames_per_buffer=1280)
+    except Exception as e:
+        print(f"[Fatal Error] Klarte ikke å finne en fungerende mikrofon: {e}", flush=True)
+        print("Sørg for at en mikrofon er koblet til! Avslutter AI-modulen.", flush=True)
+        import sys
+        sys.exit(1)
     
     print("Loading OpenWakeWord...")
     oww_model = None

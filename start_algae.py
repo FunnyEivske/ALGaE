@@ -40,7 +40,7 @@ def prepare_environment():
         run_terminal_command(f"{python_pip} install -r {requirements_file}")
 
 def boot_algae():
-    print("Booting ALGaE Modules...")
+    print("Booting ALGaE Modules...", flush=True)
     python_executable = os.path.join(VENV_PATH, "bin", "python")
     
     # 1. Start the visual interface server
@@ -48,7 +48,7 @@ def boot_algae():
     subprocess.Popen([python_executable, server_script], cwd=PROJECT_FOLDER)
 
     import time
-    print("Rescue delay: Venter 30 sekunder slik at bruker kan logge inn på TTY1...")
+    print("Rescue delay: Venter 30 sekunder slik at bruker kan logge inn på TTY1...", flush=True)
     time.sleep(30)
 
     # 2. Start the display (kiosk mode)
@@ -56,7 +56,9 @@ def boot_algae():
 
     # 3. Start the AI core
     brain_script = os.path.join(PROJECT_FOLDER, "core", "ai_main.py")
-    subprocess.run([python_executable, brain_script], cwd=PROJECT_FOLDER)
+    result = subprocess.run([python_executable, brain_script], cwd=PROJECT_FOLDER)
+    import sys
+    sys.exit(result.returncode)
 
 if __name__ == "__main__":
     try:
