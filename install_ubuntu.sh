@@ -19,7 +19,7 @@ sudo apt update
 sudo apt install -y software-properties-common
 sudo add-apt-repository ppa:deadsnakes/ppa -y
 sudo apt update
-sudo apt install -y python3.11 python3.11-venv python3.11-dev portaudio19-dev git chromium-browser xinit xserver-xorg xserver-xorg-video-all matchbox-window-manager x11-xserver-utils
+sudo apt install -y python3.11 python3.11-venv python3.11-dev portaudio19-dev git chromium-browser xinit xserver-xorg xserver-xorg-video-all xserver-xorg-legacy matchbox-window-manager x11-xserver-utils
 
 echo "2. Setter opp virtuelt miljø (venv) med Python 3.11..."
 # Hvis gammelt (feilende) venv finnes, fjern det
@@ -39,10 +39,13 @@ echo "4. Gjør skriptene kjørbare..."
 chmod +x auto_updater.sh start_kiosk.sh
 
 echo "5. Konfigurerer X11 tilgang (slik at tjenesten kan starte grafikk)..."
+sudo usermod -aG tty,video,input $CURRENT_USER
 if [ -f /etc/X11/Xwrapper.config ]; then
     sudo sed -i 's/allowed_users=console/allowed_users=anybody/' /etc/X11/Xwrapper.config
+    grep -q "needs_root_rights=yes" /etc/X11/Xwrapper.config || echo "needs_root_rights=yes" | sudo tee -a /etc/X11/Xwrapper.config
 else
     echo "allowed_users=anybody" | sudo tee /etc/X11/Xwrapper.config
+    echo "needs_root_rights=yes" | sudo tee -a /etc/X11/Xwrapper.config
 fi
 
 echo "6. Setter opp ALGaE som en bakgrunnstjeneste (systemd)..."
