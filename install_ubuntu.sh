@@ -19,7 +19,7 @@ sudo apt update
 sudo apt install -y software-properties-common
 sudo add-apt-repository ppa:deadsnakes/ppa -y
 sudo apt update
-sudo apt install -y python3.11 python3.11-venv python3.11-dev portaudio19-dev git chromium-browser xinit
+sudo apt install -y python3.11 python3.11-venv python3.11-dev portaudio19-dev git chromium-browser xinit xserver-xorg xserver-xorg-video-all
 
 echo "2. Setter opp virtuelt miljø (venv) med Python 3.11..."
 # Hvis gammelt (feilende) venv finnes, fjern det
@@ -38,7 +38,14 @@ echo "3. Installerer Python-pakker fra requirements.txt..."
 echo "4. Gjør skriptene kjørbare..."
 chmod +x auto_updater.sh
 
-echo "5. Setter opp ALGaE som en bakgrunnstjeneste (systemd)..."
+echo "5. Konfigurerer X11 tilgang (slik at tjenesten kan starte grafikk)..."
+if [ -f /etc/X11/Xwrapper.config ]; then
+    sudo sed -i 's/allowed_users=console/allowed_users=anybody/' /etc/X11/Xwrapper.config
+else
+    echo "allowed_users=anybody" | sudo tee /etc/X11/Xwrapper.config
+fi
+
+echo "6. Setter opp ALGaE som en bakgrunnstjeneste (systemd)..."
 # Lager en kopi av service-filen hvor vi setter inn riktig bruker og mappe
 sed "s|INSERT_USER|$CURRENT_USER|g; s|INSERT_DIR|$ALGAE_DIR|g" algae.service > /tmp/algae.service
 sudo mv /tmp/algae.service /etc/systemd/system/algae.service
@@ -48,7 +55,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable algae.service
 sudo systemctl start algae.service
 
-echo "6. Setter opp automatisk oppdatering (hvert 15. minutt)..."
+echo "7. Setter opp automatisk oppdatering (hvert 15. minutt)..."
 # Fjerner gammel cron-jobb om den finnes, og legger til ny
 (crontab -l 2>/dev/null | grep -v "auto_updater.sh"; echo "*/15 * * * * $ALGAE_DIR/auto_updater.sh >> $ALGAE_DIR/updater.log 2>&1") | crontab -
 

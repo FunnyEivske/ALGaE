@@ -15,6 +15,12 @@ ExecStart=INSERT_DIR/venv/bin/python start_algae.py
 Restart=always
 RestartSec=5
 
+# TTY / Skjerm innstillinger for å tillate startx
+PAMName=login
+StandardInput=tty
+StandardOutput=journal
+TTYPath=/dev/tty7
+
 # For at logging (print) skal vises umiddelbart i journalctl
 Environment=PYTHONUNBUFFERED=1
 
