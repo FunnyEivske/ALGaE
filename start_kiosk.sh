@@ -20,14 +20,14 @@ xset -dpms
 # 2. Start den lette vindusbehandleren (tvinger fullskjerm)
 matchbox-window-manager -use_titlebar no &
 
-# 3. Start nettleseren i en evig løkke, slik at den spretter opp igjen hvis den kræsjer
+# 3. Start nettleseren med en egen DBus-sesjon (KREVES av Snap-pakker i Ubuntu!)
 while true; do
-  chromium-browser --kiosk http://localhost:8080 --no-sandbox --disable-infobars --window-position=0,0 --window-size=1920,1080
+  dbus-run-session chromium-browser --kiosk http://localhost:8080 --no-sandbox --disable-infobars --window-position=0,0 --window-size=1920,1080
   sleep 5
 done
 EOF
 
 chmod +x ~/.xinitrc
 
-# Start selve X-serveren (grafikkmotoren) på TTY7, og skjul musepekeren
-startx ~/.xinitrc -- -nocursor vt7
+# Start selve X-serveren (grafikkmotoren) på TTY7, og lagre feilmeldinger i xorg_error.log
+startx ~/.xinitrc -- -nocursor vt7 > ~/xorg_error.log 2>&1
