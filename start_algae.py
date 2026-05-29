@@ -55,8 +55,7 @@ def boot_algae():
     subprocess.Popen("bash start_kiosk.sh", shell=True, cwd=PROJECT_FOLDER)
 
     # 3. Start the AI core
-    brain_script = os.path.join(PROJECT_FOLDER, "core", "ai_main.py")
-    result = subprocess.run([python_executable, brain_script], cwd=PROJECT_FOLDER)
+    result = subprocess.run([python_executable, "-m", "core.ai_main"], cwd=PROJECT_FOLDER)
     import sys
     sys.exit(result.returncode)
 
