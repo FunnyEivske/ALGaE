@@ -30,7 +30,7 @@ def prepare_environment():
     # Setup Python environment
     if not os.path.exists(VENV_PATH):
         print("Building Python environment...")
-        run_terminal_command(f"python3 -m venv {VENV_PATH}")
+        run_terminal_command(f"python3.11 -m venv {VENV_PATH}")
 
     # Check and Install dependencies
     python_pip = os.path.join(VENV_PATH, "bin", "pip")

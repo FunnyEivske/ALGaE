@@ -16,11 +16,20 @@ echo "🚀 Setter opp ALGaE på Ubuntu..."
 
 echo "1. Oppdaterer pakkeverktøy og installerer nødvendige avhengigheter..."
 sudo apt update
-sudo apt install -y python3 python3-venv python3-pip git
+sudo apt install -y software-properties-common
+sudo add-apt-repository ppa:deadsnakes/ppa -y
+sudo apt update
+sudo apt install -y python3.11 python3.11-venv git chromium-browser xinit
 
-echo "2. Setter opp virtuelt miljø (venv)..."
+echo "2. Setter opp virtuelt miljø (venv) med Python 3.11..."
+# Hvis gammelt (feilende) venv finnes, fjern det
+if [ -d "venv" ] && ! ./venv/bin/python --version | grep "3.11" > /dev/null; then
+    echo "Fjerner gammelt venv..."
+    rm -rf venv
+fi
+
 if [ ! -d "venv" ]; then
-    python3 -m venv venv
+    python3.11 -m venv venv
 fi
 
 echo "3. Installerer Python-pakker fra requirements.txt..."
