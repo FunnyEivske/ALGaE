@@ -58,3 +58,18 @@ ALGaE is built to be a standalone appliance. The primary development and deploym
 The architecture is split into two main parts:
 1. A robust **Python back-end** manages the AI, memory, and hardware interfaces (camera, microphones). 
 2. A lightweight **web server** drives the 3D visualizer on a connected large-format display.
+
+---
+
+## 🚀 Ubuntu Quick Setup & Auto-Update
+
+ALGaE includes a completely automated installation script for Ubuntu servers. It configures the Python environment, installs dependencies, and registers ALGaE as a `systemd` background service that starts on boot.
+
+Additionally, it sets up a `cron` job that checks GitHub for updates every 15 minutes. If a new version is found, ALGaE will display an updating animation, pull the latest code, and seamlessly restart itself.
+
+**To install on a fresh Ubuntu machine:**
+```bash
+git clone https://github.com/FunnyEivske/ALGaE.git
+cd ALGaE
+bash install_ubuntu.sh
+```
