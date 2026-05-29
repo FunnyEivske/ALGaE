@@ -47,8 +47,8 @@ def boot_algae():
     server_script = os.path.join(PROJECT_FOLDER, "server.py")
     subprocess.Popen([python_executable, server_script], cwd=PROJECT_FOLDER)
     
-    # 2. Start the display
-    subprocess.Popen("startx /usr/bin/chromium-browser --kiosk http://localhost:8080 --no-sandbox", shell=True)
+    # 2. Start the display (kiosk mode)
+    subprocess.Popen("bash start_kiosk.sh", shell=True, cwd=PROJECT_FOLDER)
 
     # 3. Start the AI core
     brain_script = os.path.join(PROJECT_FOLDER, "core", "ai_main.py")
