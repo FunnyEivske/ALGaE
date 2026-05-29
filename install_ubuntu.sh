@@ -19,7 +19,7 @@ sudo apt update
 sudo apt install -y software-properties-common
 sudo add-apt-repository ppa:deadsnakes/ppa -y
 sudo apt update
-sudo apt install -y python3.11 python3.11-venv git chromium-browser xinit
+sudo apt install -y python3.11 python3.11-venv python3.11-dev portaudio19-dev git chromium-browser xinit
 
 echo "2. Setter opp virtuelt miljø (venv) med Python 3.11..."
 # Hvis gammelt (feilende) venv finnes, fjern det
