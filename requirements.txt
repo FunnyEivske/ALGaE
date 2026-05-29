@@ -7,8 +7,9 @@ requests==2.31.0
 
 ollama==0.1.7
 
-# Audio / Wake Word
+# Audio / Wake Word / TTS
 
 PyAudio==0.2.14
 openwakeword==0.6.0
 vosk==0.3.45
+pyttsx3==2.90

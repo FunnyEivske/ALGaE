@@ -54,9 +54,12 @@ def boot_algae():
     # 2. Start the display (kiosk mode)
     subprocess.Popen("bash start_kiosk.sh", shell=True, cwd=PROJECT_FOLDER)
 
-    # 3. Start the AI core
-    result = subprocess.run([python_executable, "-m", "core.ai_main"], cwd=PROJECT_FOLDER)
+    # 3. Start the AI core (med full logging til ai_crash.log)
     import sys
+    log_path = os.path.join(PROJECT_FOLDER, "ai_crash.log")
+    with open(log_path, "w") as log_file:
+        result = subprocess.run([python_executable, "-m", "core.ai_main"], cwd=PROJECT_FOLDER, stdout=log_file, stderr=subprocess.STDOUT)
+    
     sys.exit(result.returncode)
 
 if __name__ == "__main__":
