@@ -1,5 +1,6 @@
 # Core server and visualizer dependencies
 
+numpy<2.0.0
 opencv-python==4.9.0.80
 requests==2.31.0
 
