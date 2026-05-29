@@ -1,0 +1,22 @@
+[Unit]
+Description=ALGaE AI Robot Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# Brukeren og stien blir fylt inn automatisk av installasjonsskriptet
+User=INSERT_USER
+WorkingDirectory=INSERT_DIR
+
+# Kjører det virtuelle miljøets Python direkte
+ExecStart=INSERT_DIR/venv/bin/python start_algae.py
+
+# Hvis programmet krasjer, start det på nytt etter 5 sekunder
+Restart=always
+RestartSec=5
+
+# For at logging (print) skal vises umiddelbart i journalctl
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

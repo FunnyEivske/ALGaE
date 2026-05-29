@@ -1,0 +1,56 @@
+#!/bin/bash
+# install_ubuntu.sh
+# Kjøres kun første gang på Ubuntu-serveren for å sette opp alt
+
+# Finn stien der vi er nå (der ALGaE ligger)
+ALGAE_DIR="$(pwd)"
+CURRENT_USER="$USER"
+
+if [ "$EUID" -eq 0 ]; then
+  echo "Vennligst IKKE kjør dette skriptet som root (med sudo foran direkte)."
+  echo "Kjør det som vanlig bruker, så spør skriptet om passord ved behov."
+  exit
+fi
+
+echo "🚀 Setter opp ALGaE på Ubuntu..."
+
+echo "1. Oppdaterer pakkeverktøy og installerer nødvendige avhengigheter..."
+sudo apt update
+sudo apt install -y python3 python3-venv python3-pip git
+
+echo "2. Setter opp virtuelt miljø (venv)..."
+if [ ! -d "venv" ]; then
+    python3 -m venv venv
+fi
+
+echo "3. Installerer Python-pakker fra requirements.txt..."
+./venv/bin/pip install -r requirements.txt
+
+echo "4. Gjør skriptene kjørbare..."
+chmod +x auto_updater.sh
+
+echo "5. Setter opp ALGaE som en bakgrunnstjeneste (systemd)..."
+# Lager en kopi av service-filen hvor vi setter inn riktig bruker og mappe
+sed "s|INSERT_USER|$CURRENT_USER|g; s|INSERT_DIR|$ALGAE_DIR|g" algae.service > /tmp/algae.service
+sudo mv /tmp/algae.service /etc/systemd/system/algae.service
+
+# Last inn systemd på nytt og aktiver tjenesten
+sudo systemctl daemon-reload
+sudo systemctl enable algae.service
+sudo systemctl start algae.service
+
+echo "6. Setter opp automatisk oppdatering (hvert 15. minutt)..."
+# Fjerner gammel cron-jobb om den finnes, og legger til ny
+(crontab -l 2>/dev/null | grep -v "auto_updater.sh"; echo "*/15 * * * * $ALGAE_DIR/auto_updater.sh >> $ALGAE_DIR/updater.log 2>&1") | crontab -
+
+echo ""
+echo "✅ ALGaE ER NÅ FERDIG SATT OPP OG KJØRER I BAKGRUNNEN!"
+echo "--------------------------------------------------------"
+echo "👉 For å se hva ALGaE driver med (loggen), skriv:"
+echo "   journalctl -u algae -f"
+echo ""
+echo "👉 For å se oppdaterings-loggen, skriv:"
+echo "   cat $ALGAE_DIR/updater.log"
+echo ""
+echo "For å starte ALGaE på nytt manuelt:"
+echo "   sudo systemctl restart algae"
