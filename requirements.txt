@@ -1,13 +1,13 @@
-Core server and visualizer dependencies
+# Core server and visualizer dependencies
 
 opencv-python==4.9.0.80
 requests==2.31.0
 
-LLM integration
+# LLM integration
 
 ollama==0.1.7
 
-Audio / Wake Word
+# Audio / Wake Word
 
 PyAudio==0.2.14
 openwakeword==0.6.0
