@@ -38,8 +38,8 @@ echo "3. Installerer Python-pakker fra requirements.txt..."
 echo "4. Gjør skriptene kjørbare..."
 chmod +x auto_updater.sh start_kiosk.sh
 
-echo "5. Konfigurerer X11 tilgang (slik at tjenesten kan starte grafikk)..."
-sudo usermod -aG tty,video,input $CURRENT_USER
+echo "5. Konfigurerer tilganger for skjerm og lyd..."
+sudo usermod -aG tty,video,input,audio $CURRENT_USER
 if [ -f /etc/X11/Xwrapper.config ]; then
     sudo sed -i 's/allowed_users=console/allowed_users=anybody/' /etc/X11/Xwrapper.config
     grep -q "needs_root_rights=yes" /etc/X11/Xwrapper.config || echo "needs_root_rights=yes" | sudo tee -a /etc/X11/Xwrapper.config
