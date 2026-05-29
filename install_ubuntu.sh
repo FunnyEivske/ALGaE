@@ -19,7 +19,7 @@ sudo apt update
 sudo apt install -y software-properties-common
 sudo add-apt-repository ppa:deadsnakes/ppa -y
 sudo apt update
-sudo apt install -y python3.11 python3.11-venv python3.11-dev portaudio19-dev git chromium-browser xinit xserver-xorg xserver-xorg-video-all xserver-xorg-legacy matchbox-window-manager x11-xserver-utils
+sudo apt install -y python3.11 python3.11-venv python3.11-dev portaudio19-dev git chromium-browser xinit xserver-xorg xserver-xorg-video-all xserver-xorg-legacy matchbox-window-manager x11-xserver-utils cage
 
 echo "2. Setter opp virtuelt miljø (venv) med Python 3.11..."
 # Hvis gammelt (feilende) venv finnes, fjern det
