@@ -92,9 +92,10 @@ def main_loop():
         stream = p.open(format=pyaudio.paInt16, channels=1, rate=16000, input=True, frames_per_buffer=1280)
     except Exception as e:
         print(f"[Fatal Error] Klarte ikke å finne en fungerende mikrofon: {e}", flush=True)
-        print("Sørg for at en mikrofon er koblet til! Avslutter AI-modulen.", flush=True)
-        import sys
-        sys.exit(1)
+        print("Kjører i maskinvareløs modus. Holder systemet i live slik at UI-et ikke krasjer.", flush=True)
+        while True:
+            import time
+            time.sleep(60)
     
     print("Loading OpenWakeWord...")
     oww_model = None
